@@ -1,15 +1,14 @@
 from __future__ import absolute_import
-import shutil
 import logging
 from threading import RLock
 import os
-import pkg_resources
 
 from dxlclient.client import DxlClient
 from dxlclient.client_config import DxlClientConfig
 from dxlclient.callbacks import EventCallback, RequestCallback
 from dxlclient._thread_pool import ThreadPool
 from ._compat import ConfigParser
+from ._resources import package_files
 
 
 # Configure local logger
@@ -139,7 +138,8 @@ class Application(object):
         # If the configuration directory exists in the library, create config files as necessary
         # This check also provides backwards compatibility for projects that don't have the
         # configuration files in the library.
-        if pkg_resources.resource_exists(mod, self.LIB_CONFIG_DIR):
+        lib_config_dir = package_files(mod).joinpath(self.LIB_CONFIG_DIR)
+        if lib_config_dir.is_dir():
             # Create configuration directory if not found
             if not os.access(self._config_dir, os.R_OK):
                 logger.info("Configuration directory '%s' not found, creating...",
@@ -151,16 +151,15 @@ class Application(object):
                                       if os.path.isfile(os.path.join(self._config_dir, name))])
 
             # Create configuration files if not found
-            files = pkg_resources.resource_listdir(mod, self.LIB_APP_CONFIG_DIR)
-            for file_name in files:
+            lib_app_config_dir = package_files(mod).joinpath(self.LIB_APP_CONFIG_DIR)
+            for resource in lib_app_config_dir.iterdir():
+                file_name = resource.name
                 config_path = os.path.join(self._config_dir, file_name)
                 if not os.access(config_path, os.R_OK):
-                    resource_filename = pkg_resources.resource_filename(
-                        mod, self.LIB_APP_CONFIG_DIR + "/" + file_name)
                     f_lower = file_name.lower()
                     # Copy configuration file. Only copy logging file if the
                     # directory was empty
-                    if not os.path.isdir(resource_filename) and \
+                    if resource.is_file() and \
                             not(f_lower.endswith(".py")) and \
                             not(f_lower.endswith(".pyc")) and \
                             (f_lower != Application.LOGGING_CONFIG_FILE or
@@ -168,8 +167,8 @@ class Application(object):
                         logger.info(
                             "Configuration file '%s' not found, creating...",
                             file_name)
-                        shutil.copyfile(pkg_resources.resource_filename(
-                            mod, self.LIB_APP_CONFIG_DIR + "/" + file_name), config_path)
+                        with open(config_path, "wb") as config_file:
+                            config_file.write(resource.read_bytes())
 
         if not os.access(self._dxlclient_config_path, os.R_OK):
             raise Exception(
@@ -187,7 +186,7 @@ class Application(object):
         config = ConfigParser()
         self._config = config
         read_files = config.read(self._app_config_path)
-        if len(read_files) is not 1:
+        if len(read_files) != 1:
             raise Exception(
                 "Error attempting to read application configuration file: {0}".format(
                     self._app_config_path))

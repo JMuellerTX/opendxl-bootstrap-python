@@ -54,7 +54,7 @@ class DxlBootstrap(object):
         """
         config = ConfigParser()
         read_files = config.read(config_file)
-        if len(read_files) is not 1:
+        if len(read_files) != 1:
             raise Exception(
                 "Error attempting to read configuration file: {0}".format(
                     config_file))

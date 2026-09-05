@@ -3,8 +3,8 @@ from abc import ABCMeta, abstractmethod
 from csv import reader
 from io import StringIO
 import re
-import pkg_resources
 from ..._exceptions import NoOptionError
+from ..._resources import package_files
 
 
 class TemplateContext(object):
@@ -305,7 +305,7 @@ class Template(ABCMeta('ABC', (object,), {'__slots__': ()})): # compatible metac
             replace_dict = {}
 
         resource_path = '/'.join(("static", resource_name))
-        resource = pkg_resources.resource_string(package, resource_path).decode("utf8")
+        resource = package_files(package).joinpath(resource_path).read_text(encoding="utf8")
 
         ret_lines = []
         for line in resource.splitlines():
