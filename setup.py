@@ -74,7 +74,7 @@ setup(
 
     # Requirements
     install_requires=[
-        "dxlclient>=4.1.0.184",
+        "dxlclient @ git+https://github.com/JMuellerTX/opendxl-client-python@epo-legacy",
         'importlib_resources>=1.3; python_version < "3.9"'
     ],
 
