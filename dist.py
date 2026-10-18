@@ -8,14 +8,9 @@ from __future__ import print_function
 import re
 import os
 import subprocess
-
-# pylint: disable=no-name-in-module, import-error
-from distutils.dir_util import copy_tree, remove_tree
-from distutils.file_util import copy_file, move_file
-from distutils.core import run_setup
-from distutils.archive_util import make_archive
+import sys
 from tempfile import mkstemp
-from shutil import move
+from shutil import copyfile, copytree, make_archive, move, rmtree
 
 
 def replace(file_path, pattern, subst):
@@ -46,7 +41,7 @@ DIST_RELEASE_DIR = os.path.join(DIST_DIRECTORY, RELEASE_NAME)
 # Remove the dist directory if it exists
 if os.path.exists(DIST_DIRECTORY):
     print("\nRemoving dist directory: " + DIST_DIRECTORY + "\n")
-    remove_tree(DIST_DIRECTORY, verbose=1)
+    rmtree(DIST_DIRECTORY)
 
 # Make the dist directory
 print("\nMaking dist directory: " + DIST_DIRECTORY + "\n")
@@ -68,11 +63,12 @@ for f in os.listdir(DIST_DOCTMP_DIR):
 
 # Copy files to dist/doctmp
 print("\nCopying conf.py, docutils.conf, and sdk directory\n")
-copy_file(os.path.join(DIST_PY_FILE_LOCATION, "doc", "conf.py"),
-          os.path.join(DIST_DOCTMP_DIR, "conf.py"))
-copy_file(os.path.join(DIST_PY_FILE_LOCATION, "doc", "docutils.conf"),
-          os.path.join(DIST_DOCTMP_DIR, "docutils.conf"))
-copy_tree(os.path.join(DIST_PY_FILE_LOCATION, "doc", "sdk"), DIST_DOCTMP_DIR)
+copyfile(os.path.join(DIST_PY_FILE_LOCATION, "doc", "conf.py"),
+         os.path.join(DIST_DOCTMP_DIR, "conf.py"))
+copyfile(os.path.join(DIST_PY_FILE_LOCATION, "doc", "docutils.conf"),
+         os.path.join(DIST_DOCTMP_DIR, "docutils.conf"))
+copytree(os.path.join(DIST_PY_FILE_LOCATION, "doc", "sdk"), DIST_DOCTMP_DIR,
+         dirs_exist_ok=True)
 
 # Call Sphinx build
 print("\nCalling sphinx-build\n")
@@ -81,55 +77,59 @@ subprocess.check_call(["sphinx-build", "-b", "html", DIST_DOCTMP_DIR, os.path.jo
 replace(os.path.join(DIST_DIRECTORY, "doc", "_static", "classic.css"), "text-align: justify", "text-align: none")
 
 # Delete .doctrees
-remove_tree(os.path.join(os.path.join(DIST_DIRECTORY, "doc"), ".doctrees"), verbose=1)
+rmtree(os.path.join(os.path.join(DIST_DIRECTORY, "doc"), ".doctrees"))
 # Delete .buildinfo
 os.remove(os.path.join(os.path.join(DIST_DIRECTORY, "doc"), ".buildinfo"))
 
 # Move README.html to root of dist directory
 print("\nMoving README.html\n")
-move_file(os.path.join(DIST_DOCTMP_DIR, "README.html"), DIST_DIRECTORY)
+move(os.path.join(DIST_DOCTMP_DIR, "README.html"), DIST_DIRECTORY)
 
 # Remove doctmp directory
 print("\nDeleting doctmp directory\n")
-remove_tree(DIST_DOCTMP_DIR)
+rmtree(DIST_DOCTMP_DIR)
 
 # Call setup.py
 print("\nRunning setup.py sdist\n")
-run_setup(SETUP_PY,
-          ["sdist",
-           "--format",
-           "zip",
-           "--dist-dir",
-           DIST_LIB_DIRECTORY])
+subprocess.check_call([sys.executable,
+                       SETUP_PY,
+                       "sdist",
+                       "--format",
+                       "zip",
+                       "--dist-dir",
+                       DIST_LIB_DIRECTORY])
 
 print("\nRunning setup.py bdist_wheel\n")
-run_setup(SETUP_PY,
-          ["bdist_wheel",
-           "--dist-dir",
-           DIST_LIB_DIRECTORY,
-           "--universal"])
+subprocess.check_call([sys.executable,
+                       SETUP_PY,
+                       "bdist_wheel",
+                       "--dist-dir",
+                       DIST_LIB_DIRECTORY,
+                       "--universal"])
 
 # cp -rf config dist
 print("\nCopying config in to dist directory\n")
-copy_tree(os.path.join(DIST_PY_FILE_LOCATION, "config"), os.path.join(DIST_DIRECTORY, "config"))
+copytree(os.path.join(DIST_PY_FILE_LOCATION, "config"),
+         os.path.join(DIST_DIRECTORY, "config"),
+         dirs_exist_ok=True)
 
 # Copy everything in to release dir
 print("\nCopying dist to " + DIST_RELEASE_DIR + "\n")
-copy_tree(DIST_DIRECTORY, DIST_RELEASE_DIR)
+copytree(DIST_DIRECTORY, DIST_RELEASE_DIR, dirs_exist_ok=True)
 
 # rm -rf build
 print("\nRemoving build directory\n")
-remove_tree(os.path.join(DIST_PY_FILE_LOCATION, "build"))
+rmtree(os.path.join(DIST_PY_FILE_LOCATION, "build"))
 
 # rm -rf dxlbootstrap.egg-info
 print("\nRemoving dxlbootstrap.egg-info\n")
-remove_tree(os.path.join(DIST_PY_FILE_LOCATION, "dxlbootstrap.egg-info"))
+rmtree(os.path.join(DIST_PY_FILE_LOCATION, "dxlbootstrap.egg-info"))
 
 # Make dist zip
 print("\nMaking dist zip\n")
 make_archive(DIST_RELEASE_DIR, "zip", DIST_DIRECTORY, RELEASE_NAME)
 
 print("\nRemoving " + DIST_RELEASE_DIR + "\n")
-remove_tree(DIST_RELEASE_DIR)
+rmtree(DIST_RELEASE_DIR)
 
 print("\nFinished")

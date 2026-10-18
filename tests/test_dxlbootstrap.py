@@ -72,6 +72,10 @@ class DxlBootstrapTest(unittest.TestCase):
             mock_print.assert_called_with("Generation succeeded.")
             self.assertTrue(os.path.exists(
                 os.path.join(app_dir, "geolocationservice", "app.py")))
+            with open(os.path.join(app_dir, "dist.py")) as f:
+                self.assertNotIn("distutils", f.read())
+            with open(os.path.join(app_dir, "clean.py")) as f:
+                self.assertNotIn("distutils", f.read())
 
     def test_generate_client_command(self):
         with _TempDir("genclient") as temp_dir, \
@@ -85,3 +89,7 @@ class DxlBootstrapTest(unittest.TestCase):
             mock_print.assert_called_with("Generation succeeded.")
             self.assertTrue(os.path.exists(
                 os.path.join(client_dir, "geolocationclient", "client.py")))
+            with open(os.path.join(client_dir, "dist.py")) as f:
+                self.assertNotIn("distutils", f.read())
+            with open(os.path.join(client_dir, "clean.py")) as f:
+                self.assertNotIn("distutils", f.read())

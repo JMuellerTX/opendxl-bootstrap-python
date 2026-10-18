@@ -3,16 +3,19 @@
 from __future__ import absolute_import
 import glob
 import os
-import distutils.command.sdist
-import distutils.log
 import subprocess
 import sys
 from setuptools import Command, setup
 import setuptools.command.sdist
 
-
-# Patch setuptools' sdist behaviour with distutils' sdist behaviour
-setuptools.command.sdist.sdist.run = distutils.command.sdist.sdist.run
+try:
+    import distutils.command.sdist
+    import distutils.log
+    # Patch setuptools' sdist behaviour with distutils' sdist behaviour
+    setuptools.command.sdist.sdist.run = distutils.command.sdist.sdist.run
+    LOG_INFO = distutils.log.INFO
+except ImportError:
+    LOG_INFO = 2
 
 VERSION_INFO = {}
 CWD = os.path.abspath(os.path.dirname(__file__))
@@ -31,7 +34,7 @@ class LintCommand(Command):
         pass
     def run(self):
         self.announce("Running pylint for library source files and tests",
-                      level=distutils.log.INFO)
+                      level=LOG_INFO)
         subprocess.check_call(["pylint", "dxlbootstrap", "tests"] +
                               glob.glob("*.py"))
 
@@ -48,7 +51,7 @@ class CiCommand(Command):
         pass
     def run(self):
         self.run_command("lint")
-        self.announce("Running tests", level=distutils.log.INFO)
+        self.announce("Running tests", level=LOG_INFO)
         subprocess.check_call([sys.executable, "-m", "pytest", "tests"])
 
 TEST_REQUIREMENTS = [
