@@ -35,7 +35,10 @@ class MessageUtils(object):
         :param json_string: The JSON string
         :return: The Python dictionary (``dict``)
         """
-        return json.loads(json_string.rstrip("\0"))
+        res = json.loads(json_string.rstrip("\0"))
+        if not isinstance(res, dict):
+            raise ValueError("JSON payload must be a JSON object")
+        return res
 
     @staticmethod
     def dict_to_json_payload(message, dict, enc="utf-8"): # pylint: disable=redefined-builtin

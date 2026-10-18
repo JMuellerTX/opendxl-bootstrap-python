@@ -71,3 +71,11 @@ class ApplicationConfigFilesTest(unittest.TestCase):
         self.assertFalse(
             os.path.exists(os.path.join(config_dir, "logging.config")))
         self.assertTrue(os.path.exists(os.path.join(config_dir, "test.config")))
+
+    def test_json_to_dict_rejects_non_object(self):
+        from dxlbootstrap.util import MessageUtils
+        self.assertEqual({"a": 1}, MessageUtils.json_to_dict('{"a": 1}'))
+        for invalid in ('[1, 2, 3]', '"string"', '123', 'true', 'null'):
+            with self.assertRaises(ValueError):
+                MessageUtils.json_to_dict(invalid)
+

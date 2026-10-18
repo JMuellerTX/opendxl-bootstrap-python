@@ -167,8 +167,14 @@ class Application(object):
                         logger.info(
                             "Configuration file '%s' not found, creating...",
                             file_name)
-                        with open(config_path, "wb") as config_file:
+                        fd = os.open(
+                            config_path,
+                            os.O_WRONLY | os.O_CREAT | os.O_TRUNC |
+                            getattr(os, "O_BINARY", 0),
+                            0o600)
+                        with os.fdopen(fd, "wb") as config_file:
                             config_file.write(resource.read_bytes())
+                        os.chmod(config_path, 0o600)
 
         if not os.access(self._dxlclient_config_path, os.R_OK):
             raise Exception(
