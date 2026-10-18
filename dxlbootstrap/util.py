@@ -36,8 +36,8 @@ class MessageUtils(object):
         :return: The Python dictionary (``dict``)
         """
         res = json.loads(json_string.rstrip("\0"))
-        if not isinstance(res, dict):
-            raise ValueError("JSON payload must be a JSON object")
+        if not isinstance(res, (dict, list)):
+            raise ValueError("JSON payload must be a JSON object or array")
         return res
 
     @staticmethod

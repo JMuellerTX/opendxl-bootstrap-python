@@ -50,15 +50,23 @@ class ApplicationConfigFilesTest(unittest.TestCase):
             package_files("dxlbootstraptestapp").joinpath("_config").is_dir())
 
     def test_config_files_created_from_package(self):
+        import stat
+        from mock import patch
         from dxlbootstraptestapp.app import TestApplication # pylint: disable=import-error
         config_dir = os.path.join(self.temp_dir, "config")
         app = TestApplication(config_dir)
-        app._validate_config_files() # pylint: disable=protected-access
+        with patch("dxlbootstrap.app.os.chmod", wraps=os.chmod) as mock_chmod:
+            app._validate_config_files() # pylint: disable=protected-access
         created = sorted(os.listdir(config_dir))
         self.assertEqual(
             ["dxlclient.config", "logging.config", "test.config"], created)
         with open(os.path.join(config_dir, "test.config")) as handle:
             self.assertEqual("[Section]\nname=test.config\n", handle.read())
+        for name in created:
+            cfg_path = os.path.join(config_dir, name)
+            mock_chmod.assert_any_call(cfg_path, 0o600)
+            if os.name != "nt":
+                self.assertEqual(0o600, stat.S_IMODE(os.stat(cfg_path).st_mode))
 
     def test_logging_config_not_created_in_existing_config_dir(self):
         from dxlbootstraptestapp.app import TestApplication # pylint: disable=import-error
@@ -72,10 +80,11 @@ class ApplicationConfigFilesTest(unittest.TestCase):
             os.path.exists(os.path.join(config_dir, "logging.config")))
         self.assertTrue(os.path.exists(os.path.join(config_dir, "test.config")))
 
-    def test_json_to_dict_rejects_non_object(self):
+    def test_json_to_dict_allows_object_and_array_rejects_primitives(self):
         from dxlbootstrap.util import MessageUtils
         self.assertEqual({"a": 1}, MessageUtils.json_to_dict('{"a": 1}'))
-        for invalid in ('[1, 2, 3]', '"string"', '123', 'true', 'null'):
+        self.assertEqual(
+            ["cmd1", "cmd2"], MessageUtils.json_to_dict('["cmd1", "cmd2"]'))
+        for invalid in ('"string"', '123', 'true', 'null'):
             with self.assertRaises(ValueError):
                 MessageUtils.json_to_dict(invalid)
-
