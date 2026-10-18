@@ -1,11 +1,14 @@
 from __future__ import absolute_import
 import os
-import distutils.command.sdist
 from setuptools import setup
 import setuptools.command.sdist
 
-# Patch setuptools' sdist behaviour with distutils' sdist behaviour
-setuptools.command.sdist.sdist.run = distutils.command.sdist.sdist.run
+try:
+    import distutils.command.sdist
+    # Patch setuptools' sdist behaviour with distutils' sdist behaviour
+    setuptools.command.sdist.sdist.run = distutils.command.sdist.sdist.run
+except ImportError:
+    pass
 
 VERSION_INFO = {}
 CWD = os.path.abspath(os.path.dirname(__file__))

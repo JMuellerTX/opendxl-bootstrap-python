@@ -1,8 +1,6 @@
 # Base image from Python ${pythonVersion} (slim)
 FROM python:${pythonVersion}-slim
 
-VOLUME ["/opt/${name}-config"]
-
 # Copy application files
 COPY . /tmp/build
 WORKDIR /tmp/build
@@ -28,4 +26,11 @@ RUN rm -rf /tmp/build
 #
 #   -v /host/dir/to/config:/opt/${name}-config
 #
+RUN useradd --system --create-home --shell /usr/sbin/nologin --uid 10001 dxl \
+    && mkdir -p /opt/${name}-config \
+    && chown dxl:dxl /opt/${name}-config
+USER dxl
+
+VOLUME ["/opt/${name}-config"]
+
 CMD ["python", "-m", "${name}", "/opt/${name}-config"]
